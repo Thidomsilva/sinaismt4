@@ -48,11 +48,31 @@ export function DashboardHeader({
   uniqueTfs,
 }: DashboardHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-4">
-      <Clock />
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-end gap-2 md:gap-4">
+      <div className="flex items-center justify-end gap-4">
+        <Clock />
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            Atualizar:
+          </span>
+          <Select
+            value={String(refreshInterval)}
+            onValueChange={(val) => setRefreshInterval(Number(val))}
+          >
+            <SelectTrigger className="w-[80px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2000">2s</SelectItem>
+              <SelectItem value="5000">5s</SelectItem>
+              <SelectItem value="10000">10s</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
         <Select value={symbolFilter} onValueChange={setSymbolFilter}>
-          <SelectTrigger className="w-full min-w-[150px] md:w-auto">
+          <SelectTrigger>
             <SelectValue placeholder="Par" />
           </SelectTrigger>
           <SelectContent>
@@ -64,7 +84,7 @@ export function DashboardHeader({
           </SelectContent>
         </Select>
         <Select value={tfFilter} onValueChange={setTfFilter}>
-          <SelectTrigger className="w-full min-w-[120px] md:w-auto">
+          <SelectTrigger>
             <SelectValue placeholder="Timeframe" />
           </SelectTrigger>
           <SelectContent>
@@ -73,24 +93,6 @@ export function DashboardHeader({
                 {tf === 'all' ? 'Todos os TFs' : tf}
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground whitespace-nowrap">
-          Atualizar a cada:
-        </span>
-        <Select
-          value={String(refreshInterval)}
-          onValueChange={(val) => setRefreshInterval(Number(val))}
-        >
-          <SelectTrigger className="w-full md:w-[100px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="2000">2s</SelectItem>
-            <SelectItem value="5000">5s</SelectItem>
-            <SelectItem value="10000">10s</SelectItem>
           </SelectContent>
         </Select>
       </div>
