@@ -24,15 +24,14 @@ function Clock() {
   const [time, setTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    setTime(new Date());
-    const timerId = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
+    const updateClock = () => setTime(new Date());
+    updateClock();
+    const timerId = setInterval(updateClock, 1000);
     return () => clearInterval(timerId);
   }, []);
 
   return (
-    <div className="font-mono text-lg font-semibold text-foreground/80 w-24">
+    <div className="font-mono text-lg font-semibold text-foreground/80 w-24 text-center">
       {time ? time.toLocaleTimeString('pt-BR') : '00:00:00'}
     </div>
   );
@@ -49,61 +48,51 @@ export function DashboardHeader({
   uniqueTfs,
 }: DashboardHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex-1 min-w-0">
-        <h1 className="text-3xl font-bold tracking-tight font-headline text-foreground">
-          Assertividade Ao Vivo
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Monitoramento em tempo real da performance dos sinais.
-        </p>
+    <div className="flex flex-wrap items-center justify-end gap-4">
+      <Clock />
+      <div className="flex items-center gap-2">
+        <Select value={symbolFilter} onValueChange={setSymbolFilter}>
+          <SelectTrigger className="w-full min-w-[150px] md:w-auto">
+            <SelectValue placeholder="Par" />
+          </SelectTrigger>
+          <SelectContent>
+            {uniqueSymbols.map((symbol) => (
+              <SelectItem key={symbol} value={symbol}>
+                {symbol === 'all' ? 'Todos os Pares' : symbol}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={tfFilter} onValueChange={setTfFilter}>
+          <SelectTrigger className="w-full min-w-[120px] md:w-auto">
+            <SelectValue placeholder="Timeframe" />
+          </SelectTrigger>
+          <SelectContent>
+            {uniqueTfs.map((tf) => (
+              <SelectItem key={tf} value={tf}>
+                {tf === 'all' ? 'Todos os TFs' : tf}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="flex flex-wrap items-center gap-4">
-        <Clock />
-        <div className="flex items-center gap-2">
-          <Select value={symbolFilter} onValueChange={setSymbolFilter}>
-            <SelectTrigger className="w-full min-w-[150px] md:w-auto">
-              <SelectValue placeholder="Par" />
-            </SelectTrigger>
-            <SelectContent>
-              {uniqueSymbols.map((symbol) => (
-                <SelectItem key={symbol} value={symbol}>
-                  {symbol === 'all' ? 'Todos os Pares' : symbol}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={tfFilter} onValueChange={setTfFilter}>
-            <SelectTrigger className="w-full min-w-[120px] md:w-auto">
-              <SelectValue placeholder="Timeframe" />
-            </SelectTrigger>
-            <SelectContent>
-              {uniqueTfs.map((tf) => (
-                <SelectItem key={tf} value={tf}>
-                  {tf === 'all' ? 'Todos os TFs' : tf}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Atualizar a cada:
-          </span>
-          <Select
-            value={String(refreshInterval)}
-            onValueChange={(val) => setRefreshInterval(Number(val))}
-          >
-            <SelectTrigger className="w-full md:w-[100px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2000">2s</SelectItem>
-              <SelectItem value="5000">5s</SelectItem>
-              <SelectItem value="10000">10s</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          Atualizar a cada:
+        </span>
+        <Select
+          value={String(refreshInterval)}
+          onValueChange={(val) => setRefreshInterval(Number(val))}
+        >
+          <SelectTrigger className="w-full md:w-[100px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="2000">2s</SelectItem>
+            <SelectItem value="5000">5s</SelectItem>
+            <SelectItem value="10000">10s</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
