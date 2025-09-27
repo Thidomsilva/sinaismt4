@@ -1,6 +1,6 @@
 'use client';
 
-import type { PublicSnapshot } from '@/lib/types';
+import type { Signal } from '@/lib/types';
 import { motion } from 'framer-motion';
 import {
   Card,
@@ -17,38 +17,44 @@ import {
   Clock,
   CandlestickChart,
   CalendarClock,
+  Timer,
 } from 'lucide-react';
 import { WinrateGauge } from './winrate-gauge';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { computeEntryLabels } from '@/lib/entry-text';
 
 interface SnapshotCardProps {
-  snapshot: PublicSnapshot;
+  signal: Signal;
 }
 
 const cardVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: { y: 0, opacity: 1, transition: { duration: 0.4, ease: 'easeOut' } },
+  exit: { y: -20, opacity: 0, transition: { duration: 0.3 } },
 };
 
 const SignalBadge = ({
-  signal,
+  direction,
 }: {
-  signal: PublicSnapshot['lastSignal'];
+  direction: Signal['direction'];
 }) => {
-  switch (signal) {
+  switch (direction) {
     case 'BUY':
       return (
         <Badge
           variant="default"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+          className="border-2 border-blue-500/80 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 gap-1.5"
         >
           <ArrowUpCircle className="h-4 w-4" /> COMPRA
         </Badge>
       );
     case 'SELL':
       return (
-        <Badge variant="destructive" className="gap-1.5">
+        <Badge
+          variant="destructive"
+          className="border-2 border-red-500/80 bg-red-500/20 text-red-300 hover:bg-red-500/30 gap-1.5"
+        >
           <ArrowDownCircle className="h-4 w-4" /> VENDA
         </Badge>
       );
@@ -61,112 +67,105 @@ const SignalBadge = ({
   }
 };
 
-const tfToSec = (tf: string): number => {
-  const map: { [key: string]: number } = {
-    M1: 60,
-    M5: 300,
-    M15: 900,
-    M30: 1800,
-    H1: 3600,
-    H4: 14400,
-    D1: 86400,
-  };
-  return map[tf] ?? 60;
-};
-
-const fmtHHmm = (dateLike: Date): string => {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const d = new Date(dateLike);
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
-const computeEntryTime = (nowEpochSec: number, tf: string, onlyOnBarClose: boolean): Date => {
-  const tfSec = tfToSec(tf);
-  const openCur = Math.floor(nowEpochSec / tfSec) * tfSec;
-  const openNext = openCur + tfSec;
-  const entryTs = onlyOnBarClose ? openNext : openCur; // epoch (s)
-  return new Date(entryTs * 1000);
-};
-
-export function SnapshotCard({ snapshot }: SnapshotCardProps) {
-  const isStale = snapshot.ageSec > 60;
-  
-  const [entryTime, setEntryTime] = useState<string>('');
+export function SnapshotCard({ signal }: SnapshotCardProps) {
+  const [ageSec, setAgeSec] = useState(0);
+  const [entryLabels, setEntryLabels] = useState({
+      entryLabel: '',
+      entryHHMM: '',
+      expiryCandlesText: '',
+      expiryHHMM: '',
+  });
 
   useEffect(() => {
-    const updateEntryTime = () => {
-      const now = Math.floor(Date.now() / 1000);
-      const date = computeEntryTime(now, snapshot.tf, snapshot.onlyOnBarClose);
-      setEntryTime(fmtHHmm(date));
+    const update = () => {
+      const now = Date.now();
+      const received = signal.receivedAt ?? signal.timestamp * 1000;
+      setAgeSec(Math.floor((now - received) / 1000));
+      setEntryLabels(computeEntryLabels(signal));
     };
-
-    updateEntryTime();
     
-    // We want to update it every second to catch the candle change
-    const interval = setInterval(updateEntryTime, 1000); 
-
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [snapshot.tf, snapshot.onlyOnBarClose]);
+  }, [signal]);
 
-  const entryTypeLabel = snapshot.onlyOnBarClose ? 'PRÓXIMA VELA' : 'VELA ATUAL';
+  const isStale = ageSec > 60;
 
   return (
-    <motion.div variants={cardVariants} whileHover={{ y: -5, scale: 1.02 }}>
-      <Card className="flex h-full flex-col overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="flex-row items-center justify-between pb-2">
+    <motion.div
+      layout
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      whileHover={{ y: -5, scale: 1.02 }}
+    >
+      <Card
+        className={cn(
+          'flex h-full flex-col overflow-hidden border-2 bg-card/60 backdrop-blur-sm transition-all duration-300',
+          signal.direction === 'BUY' && 'hover:border-blue-500/80 hover:shadow-2xl hover:shadow-blue-500/10',
+          signal.direction === 'SELL' && 'hover:border-red-500/80 hover:shadow-2xl hover:shadow-red-500/10',
+          signal.direction === 'NONE' && 'hover:border-border'
+        )}
+      >
+        <CardHeader className="flex-row items-start justify-between pb-2">
           <CardTitle className="font-headline text-2xl tracking-tighter">
-            {snapshot.symbol}
+            {signal.symbol}
           </CardTitle>
           <Badge variant="outline" className="font-mono text-sm font-semibold">
-            {snapshot.tf}
+            {signal.tf}
           </Badge>
         </CardHeader>
         <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 py-4">
-          <WinrateGauge value={snapshot.winrate} />
+          <WinrateGauge value={signal.assertiveness} />
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Amostra</p>
-            <p className="font-bold text-lg text-foreground">{snapshot.sample}</p>
+            <p className="font-bold text-lg text-foreground">{signal.sample}</p>
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-stretch gap-3 bg-secondary/30 p-4">
+        <CardFooter className="flex-col items-stretch gap-3 bg-card/40 p-4">
           <div className="flex justify-between gap-2">
-            <SignalBadge signal={snapshot.lastSignal} />
-            {snapshot.isMarketOpen ? (
+            <SignalBadge direction={signal.direction} />
+            {signal.marketStatus === 'OPEN' ? (
               <Badge
                 variant="outline"
-                className="justify-center border-primary/70 bg-transparent text-primary hover:bg-transparent"
+                className="border-green-400/50 bg-green-500/10 text-green-300"
               >
                 MERCADO ABERTO
               </Badge>
             ) : (
-              <Badge variant="secondary" className="justify-center">
-                MERCADO FECHADO
-              </Badge>
+              <Badge variant="secondary">MERCADO FECHADO</Badge>
             )}
           </div>
-          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-            <div className='flex items-center gap-1.5'>
-              <CalendarClock className='h-4 w-4'/>
+          <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <CalendarClock className="h-4 w-4" />
               <span>
-                Entrada na <strong className='font-semibold text-foreground/90'>{entryTypeLabel}</strong> ({entryTime})
+                Entrada: <strong className="font-semibold text-foreground/90">{entryLabels.entryLabel}</strong> ({entryLabels.entryHHMM})
               </span>
             </div>
-            <div className='flex items-center gap-1.5'>
-              <CandlestickChart className='h-4 w-4'/>
-              <span>Expira em {snapshot.expiry} candles</span>
+            {signal.direction !== 'NONE' && (
+              <div className="flex items-center gap-1.5">
+                <Timer className="h-4 w-4" />
+                <span>
+                    {entryLabels.expiryCandlesText}
+                    {' '}
+                    <span className='text-muted-foreground/80'>({entryLabels.expiryHHMM})</span>
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-2 border-t border-border/20 pt-3 text-sm">
+            <div
+              className={cn(
+                'flex items-center gap-1.5 text-muted-foreground',
+                isStale && 'text-yellow-400/80 font-medium'
+              )}
+            >
+              <Clock className="h-4 w-4" />
+              <span>{ageSec}s atrás</span>
             </div>
           </div>
-           <div className="flex justify-end gap-2 text-sm pt-1">
-              <div
-                className={cn(
-                  'flex items-center gap-1.5 text-muted-foreground',
-                  isStale && 'text-yellow-400 font-medium'
-                )}
-              >
-                <Clock className="h-4 w-4" />
-                <span>{snapshot.ageSec}s atrás</span>
-              </div>
-           </div>
         </CardFooter>
       </Card>
     </motion.div>

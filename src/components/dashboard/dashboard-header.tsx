@@ -5,7 +5,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
 
 interface DashboardHeaderProps {
   refreshInterval: number;
@@ -35,13 +34,13 @@ export function DashboardHeader({
           Assertividade Ao Vivo
         </h1>
         <p className="text-muted-foreground mt-1">
-          Snapshot em tempo real da performance dos sinais.
+          Monitoramento em tempo real da performance dos sinais.
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
           <Select value={symbolFilter} onValueChange={setSymbolFilter}>
-            <SelectTrigger className="w-full md:w-[150px]">
+            <SelectTrigger className="w-full min-w-[150px] md:w-auto">
               <SelectValue placeholder="Par" />
             </SelectTrigger>
             <SelectContent>
@@ -53,7 +52,7 @@ export function DashboardHeader({
             </SelectContent>
           </Select>
           <Select value={tfFilter} onValueChange={setTfFilter}>
-            <SelectTrigger className="w-full md:w-[120px]">
+            <SelectTrigger className="w-full min-w-[120px] md:w-auto">
               <SelectValue placeholder="Timeframe" />
             </SelectTrigger>
             <SelectContent>
@@ -78,8 +77,8 @@ export function DashboardHeader({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="2000">2s</SelectItem>
-              <SelectItem value="5000">5s</SelectItem>
-              <SelectItem value="10000">10s</SelectItem>
+              <SelectItem value="4000">4s</SelectItem>
+              <SelectItem value="8000">8s</SelectItem>
             </SelectContent>
           </Select>
         </div>

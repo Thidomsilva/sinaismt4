@@ -1,25 +1,13 @@
-export interface Snapshot {
-  symbol: string;
-  tf: string;
-  winrate: number;
+export type Signal = {
+  id: string;
+  symbol: string; // "EURUSD"
+  tf: string; // "M1" | "M5" | "M15" | ...
+  direction: 'BUY' | 'SELL' | 'NONE';
+  assertiveness: number; // 0..100
   sample: number;
-  lastSignal: 'BUY' | 'SELL' | 'NONE';
-  expiry: number;
-  serverTime: number;
-  isMarketOpen: boolean;
-  spread?: number;
-  notes?: string;
+  expiryCandles: number;
   onlyOnBarClose: boolean;
-}
-
-export interface SnapshotData extends Snapshot {
-  receivedAt: number;
-}
-
-export type SnapshotCache = Map<string, SnapshotData>;
-
-export interface PublicSnapshot
-  extends Omit<Snapshot, 'serverTime' | 'spread' | 'notes'> {
-  ageSec: number;
-  lastSignal: 'BUY' | 'SELL' | 'NONE';
-}
+  marketStatus: 'OPEN' | 'CLOSED';
+  timestamp: number; // epoch seconds (UTC) da vela do sinal
+  receivedAt?: number; // epoch ms (front)
+};

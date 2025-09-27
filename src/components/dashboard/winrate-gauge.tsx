@@ -14,7 +14,8 @@ export function WinrateGauge({ value }: WinrateGaugeProps) {
   };
 
   const color = getColor();
-  const strokeDashoffset = 251.2 - (251.2 * safeValue) / 100; // 251.2 is circumference (2 * pi * 40)
+  const circumference = 2 * Math.PI * 40;
+  const strokeDashoffset = circumference - (safeValue / 100) * circumference;
 
   return (
     <div className="relative h-36 w-36">
@@ -24,7 +25,7 @@ export function WinrateGauge({ value }: WinrateGaugeProps) {
           cy="50"
           r="40"
           strokeWidth="10"
-          className="stroke-muted/20"
+          className="stroke-muted/10"
           fill="transparent"
         />
         <circle
@@ -32,11 +33,12 @@ export function WinrateGauge({ value }: WinrateGaugeProps) {
           cy="50"
           r="40"
           strokeWidth="10"
-          strokeDasharray="251.2"
+          strokeDasharray={circumference}
           strokeLinecap="round"
           fill="transparent"
           stroke={color}
-          style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.5s ease-out' }}
+          className="transition-[stroke-dashoffset] duration-500 ease-out"
+          style={{ strokeDashoffset }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
