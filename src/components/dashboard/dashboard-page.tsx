@@ -10,6 +10,77 @@ import { useToast } from '@/hooks/use-toast';
 
 type ApiState = 'loading' | 'success' | 'error';
 
+// Mock data for simulation
+const mockSnapshots: PublicSnapshot[] = [
+  {
+    symbol: 'EURUSD',
+    tf: 'M5',
+    winrate: 82.5,
+    sample: 210,
+    lastSignal: 'BUY',
+    expiry: 3,
+    isMarketOpen: true,
+    onlyOnBarClose: true,
+    ageSec: 15,
+  },
+  {
+    symbol: 'GBPJPY',
+    tf: 'H1',
+    winrate: 75.0,
+    sample: 150,
+    lastSignal: 'SELL',
+    expiry: 5,
+    isMarketOpen: true,
+    onlyOnBarClose: false,
+    ageSec: 120,
+  },
+  {
+    symbol: 'USDJPY',
+    tf: 'M15',
+    winrate: 68.2,
+    sample: 320,
+    lastSignal: 'BUY',
+    expiry: 2,
+    isMarketOpen: true,
+    onlyOnBarClose: true,
+    ageSec: 45,
+  },
+  {
+    symbol: 'AUDCAD',
+    tf: 'M1',
+    winrate: 91.0,
+    sample: 95,
+    lastSignal: 'SELL',
+    expiry: 5,
+    isMarketOpen: true,
+    onlyOnBarClose: false,
+    ageSec: 5,
+  },
+    {
+    symbol: 'XAUUSD',
+    tf: 'M30',
+    winrate: 55.5,
+    sample: 180,
+    lastSignal: 'NONE',
+    expiry: 4,
+    isMarketOpen: true,
+    onlyOnBarClose: true,
+    ageSec: 300,
+  },
+    {
+    symbol: 'USDCAD',
+    tf: 'H4',
+    winrate: 45.0,
+    sample: 112,
+    lastSignal: 'SELL',
+    expiry: 3,
+    isMarketOpen: false,
+    onlyOnBarClose: true,
+    ageSec: 550,
+  },
+];
+
+
 export default function DashboardPage() {
   const [snapshots, setSnapshots] = useState<PublicSnapshot[]>([]);
   const [apiState, setApiState] = useState<ApiState>('loading');
@@ -19,7 +90,15 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    const useMockData = true; // Set to true to use mock data
+
     const fetchData = async () => {
+      if (useMockData) {
+        // Increment ageSec for simulation effect
+        setSnapshots(prev => prev.map(s => ({...s, ageSec: s.ageSec + (refreshInterval / 1000)})));
+        if (apiState !== 'success') setApiState('success');
+        return;
+      }
       try {
         const response = await fetch('/api/snapshots');
         if (!response.ok) {
@@ -38,12 +117,16 @@ export default function DashboardPage() {
         });
       }
     };
+    
+    if (useMockData && snapshots.length === 0) {
+        setSnapshots(mockSnapshots);
+    }
 
-    fetchData();
+    fetchData(); // Initial fetch
     const intervalId = setInterval(fetchData, refreshInterval);
 
     return () => clearInterval(intervalId);
-  }, [refreshInterval, toast, apiState]);
+  }, [refreshInterval, toast, apiState, snapshots.length]);
 
   const uniqueSymbols = useMemo(
     () => ['all', ...Array.from(new Set(snapshots.map((s) => s.symbol)))],
