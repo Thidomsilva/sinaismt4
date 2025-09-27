@@ -33,24 +33,24 @@ export function DashboardHeader({
       <CardContent className="flex flex-col md:flex-row items-center gap-4 p-4">
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight font-headline">
-            Live Assertiveness
+            Assertividade Ao Vivo
           </h1>
           <p className="text-muted-foreground">
-            Real-time snapshot of signal performance.
+            Snapshot em tempo real da performance dos sinais.
           </p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Filter by:
+            Filtrar por:
           </span>
           <Select value={symbolFilter} onValueChange={setSymbolFilter}>
             <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue placeholder="Pair" />
+              <SelectValue placeholder="Par" />
             </SelectTrigger>
             <SelectContent>
               {uniqueSymbols.map((symbol) => (
                 <SelectItem key={symbol} value={symbol}>
-                  {symbol === 'all' ? 'All Pairs' : symbol}
+                  {symbol === 'all' ? 'Todos os Pares' : symbol}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -62,7 +62,7 @@ export function DashboardHeader({
             <SelectContent>
               {uniqueTfs.map((tf) => (
                 <SelectItem key={tf} value={tf}>
-                  {tf === 'all' ? 'All TFs' : tf}
+                  {tf === 'all' ? 'Todos os TFs' : tf}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -70,7 +70,7 @@ export function DashboardHeader({
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Refresh:
+            Atualizar:
           </span>
           <Select
             value={String(refreshInterval)}

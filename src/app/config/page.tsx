@@ -1,10 +1,10 @@
-import { getConfigPageContent } from '@/ai/flows/config-page-gen-ai-help';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Nav } from '@/components/nav';
-import { Bot } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 export default async function ConfigPage() {
-  const content = await getConfigPageContent({});
+  const message =
+    'As configurações são recebidas do MT4 e gerenciadas externamente. Esta página será utilizada futuramente para exibir e analisar as configurações.';
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -13,12 +13,12 @@ export default async function ConfigPage() {
         <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bot className="h-6 w-6" />
-              Configuration Management
+              <Settings className="h-6 w-6" />
+              Gerenciamento de Configurações
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">{content.message}</p>
+            <p className="text-muted-foreground">{message}</p>
           </CardContent>
         </Card>
       </main>

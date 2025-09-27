@@ -37,19 +37,19 @@ const SignalBadge = ({
     case 'BUY':
       return (
         <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <ArrowUpCircle className="mr-1 h-3 w-3" /> BUY
+          <ArrowUpCircle className="mr-1 h-3 w-3" /> COMPRA
         </Badge>
       );
     case 'SELL':
       return (
         <Badge variant="destructive">
-          <ArrowDownCircle className="mr-1 h-3 w-3" /> SELL
+          <ArrowDownCircle className="mr-1 h-3 w-3" /> VENDA
         </Badge>
       );
     default:
       return (
         <Badge variant="secondary">
-          <MinusCircle className="mr-1 h-3 w-3" /> NONE
+          <MinusCircle className="mr-1 h-3 w-3" /> NENHUM
         </Badge>
       );
   }
@@ -71,9 +71,9 @@ export function SnapshotCard({ snapshot }: SnapshotCardProps) {
         <CardContent className="flex flex-1 flex-col items-center justify-center gap-4">
           <WinrateGauge value={snapshot.winrate} />
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-center text-sm">
-            <span className="text-muted-foreground">Sample</span>
+            <span className="text-muted-foreground">Amostra</span>
             <span className="font-semibold">{snapshot.sample}</span>
-            <span className="text-muted-foreground">Expiry</span>
+            <span className="text-muted-foreground">Expiração</span>
             <span className="font-semibold">{snapshot.expiry} candles</span>
           </div>
         </CardContent>
@@ -81,11 +81,11 @@ export function SnapshotCard({ snapshot }: SnapshotCardProps) {
           <SignalBadge signal={snapshot.lastSignal} />
           {snapshot.isMarketOpen ? (
             <Badge className="justify-center border-primary/50 bg-transparent text-primary hover:bg-primary/10">
-              MARKET OPEN
+              MERCADO ABERTO
             </Badge>
           ) : (
             <Badge variant="secondary" className="justify-center">
-              MARKET CLOSED
+              MERCADO FECHADO
             </Badge>
           )}
           <Badge
@@ -96,7 +96,7 @@ export function SnapshotCard({ snapshot }: SnapshotCardProps) {
             )}
           >
             <Clock className="h-3 w-3" />
-            <span>Updated {snapshot.ageSec}s ago</span>
+            <span>Atualizado {snapshot.ageSec}s atrás</span>
           </Badge>
         </CardFooter>
       </Card>

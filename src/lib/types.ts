@@ -20,4 +20,5 @@ export type SnapshotCache = Map<string, SnapshotData>;
 export interface PublicSnapshot
   extends Omit<Snapshot, 'serverTime' | 'spread' | 'notes'> {
   ageSec: number;
+  lastSignal: 'BUY' | 'SELL' | 'NONE';
 }

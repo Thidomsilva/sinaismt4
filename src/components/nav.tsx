@@ -14,7 +14,7 @@ export function Nav() {
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
           <Activity className="h-6 w-6 text-primary" />
-          <span className="font-headline text-xl">Signals Live</span>
+          <span className="font-headline text-xl">Sinais Ao Vivo</span>
         </Link>
         <Link
           href="/"
@@ -32,7 +32,7 @@ export function Nav() {
             pathname === '/config' ? 'text-foreground' : 'text-muted-foreground'
           )}
         >
-          Config
+          Configurações
         </Link>
       </nav>
       {/* Mobile Nav can be added here if needed */}

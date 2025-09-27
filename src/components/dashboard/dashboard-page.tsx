@@ -23,18 +23,18 @@ export default function DashboardPage() {
       try {
         const response = await fetch('/api/snapshots');
         if (!response.ok) {
-          throw new Error(`API error: ${response.statusText}`);
+          throw new Error(`Erro na API: ${response.statusText}`);
         }
         const data = await response.json();
         setSnapshots(data.items);
         if (apiState !== 'success') setApiState('success');
       } catch (error) {
-        console.error('Failed to fetch snapshots:', error);
+        console.error('Falha ao buscar snapshots:', error);
         setApiState('error');
         toast({
           variant: 'destructive',
-          title: 'Connection Error',
-          description: 'Could not fetch data from the server.',
+          title: 'Erro de Conexão',
+          description: 'Não foi possível buscar os dados do servidor.',
         });
       }
     };
@@ -75,8 +75,8 @@ export default function DashboardPage() {
         return (
           <div className="flex flex-col items-center justify-center gap-4 text-center text-destructive h-64">
             <ServerCrash className="h-12 w-12" />
-            <h2 className="text-xl font-semibold">API Connection Failed</h2>
-            <p>Could not retrieve data. Please check the server status.</p>
+            <h2 className="text-xl font-semibold">Falha na Conexão com a API</h2>
+            <p>Não foi possível obter os dados. Por favor, verifique o status do servidor.</p>
           </div>
         );
       case 'success':
@@ -85,7 +85,7 @@ export default function DashboardPage() {
               <div className="flex flex-col items-center justify-center gap-4 text-center text-muted-foreground h-64">
                 <Loader className="h-12 w-12 animate-spin text-primary" />
                 <p className="text-lg">Aguardando snapshots do MT4...</p>
-                <p className="text-sm">No data received yet. Ensure your MT4 indicator is running.</p>
+                <p className="text-sm">Nenhum dado recebido ainda. Certifique-se de que seu indicador MT4 está em execução.</p>
               </div>
             );
         }
