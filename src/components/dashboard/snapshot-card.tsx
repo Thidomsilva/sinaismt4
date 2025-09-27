@@ -109,7 +109,6 @@ export function SnapshotCard({ signal }: SnapshotCardProps) {
       const expirySeconds = newEntryLabels.entryTime.getTime() / 1000 + (signal.expiryCandles * tfSeconds);
       const newExpiryTimeRemaining = Math.floor(expirySeconds - now.getTime() / 1000);
 
-      setAgeSec(newAgeSec);
       setEntryLabels(newEntryLabels);
       setTimers({
           ageSec: newAgeSec,
