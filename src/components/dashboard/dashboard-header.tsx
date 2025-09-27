@@ -21,9 +21,10 @@ interface DashboardHeaderProps {
 }
 
 function Clock() {
-  const [time, setTime] = useState(new Date());
+  const [time, setTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    setTime(new Date());
     const timerId = setInterval(() => {
       setTime(new Date());
     }, 1000);
@@ -31,8 +32,8 @@ function Clock() {
   }, []);
 
   return (
-    <div className="font-mono text-lg font-semibold text-foreground/80">
-      {time.toLocaleTimeString('pt-BR')}
+    <div className="font-mono text-lg font-semibold text-foreground/80 w-24">
+      {time ? time.toLocaleTimeString('pt-BR') : '00:00:00'}
     </div>
   );
 }
@@ -98,8 +99,8 @@ export function DashboardHeader({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="2000">2s</SelectItem>
-              <SelectItem value="4000">4s</SelectItem>
-              <SelectItem value="8000">8s</SelectItem>
+              <SelectItem value="5000">5s</SelectItem>
+              <SelectItem value="10000">10s</SelectItem>
             </SelectContent>
           </Select>
         </div>
