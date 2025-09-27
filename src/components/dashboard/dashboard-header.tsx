@@ -29,20 +29,17 @@ export function DashboardHeader({
   uniqueTfs,
 }: DashboardHeaderProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col md:flex-row items-center gap-4 p-4">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight font-headline">
-            Assertividade Ao Vivo
-          </h1>
-          <p className="text-muted-foreground">
-            Snapshot em tempo real da performance dos sinais.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Filtrar por:
-          </span>
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex-1 min-w-0">
+        <h1 className="text-3xl font-bold tracking-tight font-headline text-foreground">
+          Assertividade Ao Vivo
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Snapshot em tempo real da performance dos sinais.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Select value={symbolFilter} onValueChange={setSymbolFilter}>
             <SelectTrigger className="w-full md:w-[150px]">
               <SelectValue placeholder="Par" />
@@ -68,9 +65,9 @@ export function DashboardHeader({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Atualizar:
+            Atualizar a cada:
           </span>
           <Select
             value={String(refreshInterval)}
@@ -86,7 +83,7 @@ export function DashboardHeader({
             </SelectContent>
           </Select>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

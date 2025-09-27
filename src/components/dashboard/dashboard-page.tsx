@@ -55,25 +55,27 @@ export default function DashboardPage() {
   );
 
   const filteredSnapshots = useMemo(() => {
-    return snapshots.filter(
-      (s) =>
-        (symbolFilter === 'all' || s.symbol === symbolFilter) &&
-        (tfFilter === 'all' || s.tf === tfFilter)
-    );
+    return snapshots
+      .filter(
+        (s) =>
+          (symbolFilter === 'all' || s.symbol === symbolFilter) &&
+          (tfFilter === 'all' || s.tf === tfFilter)
+      )
+      .sort((a, b) => b.winrate - a.winrate);
   }, [snapshots, symbolFilter, tfFilter]);
   
   const renderContent = () => {
     switch (apiState) {
       case 'loading':
         return (
-          <div className="flex flex-col items-center justify-center gap-4 text-center text-muted-foreground h-64">
+          <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center text-muted-foreground">
             <Loader className="h-12 w-12 animate-spin text-primary" />
             <p className="text-lg">Aguardando snapshots do MT4...</p>
           </div>
         );
       case 'error':
         return (
-          <div className="flex flex-col items-center justify-center gap-4 text-center text-destructive h-64">
+          <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center text-destructive">
             <ServerCrash className="h-12 w-12" />
             <h2 className="text-xl font-semibold">Falha na Conexão com a API</h2>
             <p>Não foi possível obter os dados. Por favor, verifique o status do servidor.</p>
@@ -82,7 +84,7 @@ export default function DashboardPage() {
       case 'success':
         if (snapshots.length === 0) {
             return (
-              <div className="flex flex-col items-center justify-center gap-4 text-center text-muted-foreground h-64">
+              <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center text-muted-foreground">
                 <Loader className="h-12 w-12 animate-spin text-primary" />
                 <p className="text-lg">Aguardando snapshots do MT4...</p>
                 <p className="text-sm">Nenhum dado recebido ainda. Certifique-se de que seu indicador MT4 está em execução.</p>
@@ -92,7 +94,7 @@ export default function DashboardPage() {
         return (
           <AnimatePresence>
             <motion.div
-              className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -122,7 +124,7 @@ export default function DashboardPage() {
         uniqueSymbols={uniqueSymbols}
         uniqueTfs={uniqueTfs}
       />
-      {renderContent()}
+      <div className="flex-1 mt-6">{renderContent()}</div>
     </>
   );
 }
