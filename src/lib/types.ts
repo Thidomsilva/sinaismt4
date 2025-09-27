@@ -9,6 +9,7 @@ export interface Snapshot {
   isMarketOpen: boolean;
   spread?: number;
   notes?: string;
+  onlyOnBarClose: boolean;
 }
 
 export interface SnapshotData extends Snapshot {

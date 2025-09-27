@@ -14,6 +14,7 @@ const snapshotSchema = z.object({
   isMarketOpen: z.boolean(),
   spread: z.number().optional(),
   notes: z.string().optional(),
+  onlyOnBarClose: z.boolean().default(true),
 });
 
 const corsHeaders = {

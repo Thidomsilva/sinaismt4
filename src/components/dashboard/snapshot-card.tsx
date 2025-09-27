@@ -16,9 +16,11 @@ import {
   MinusCircle,
   Clock,
   CandlestickChart,
+  CalendarClock,
 } from 'lucide-react';
 import { WinrateGauge } from './winrate-gauge';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 interface SnapshotCardProps {
   snapshot: PublicSnapshot;
@@ -37,7 +39,10 @@ const SignalBadge = ({
   switch (signal) {
     case 'BUY':
       return (
-        <Badge className="bg-green-500 text-white hover:bg-green-500/90 gap-1.5">
+        <Badge
+          variant="default"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+        >
           <ArrowUpCircle className="h-4 w-4" /> COMPRA
         </Badge>
       );
@@ -56,16 +61,63 @@ const SignalBadge = ({
   }
 };
 
+const tfToSec = (tf: string): number => {
+  const map: { [key: string]: number } = {
+    M1: 60,
+    M5: 300,
+    M15: 900,
+    M30: 1800,
+    H1: 3600,
+    H4: 14400,
+    D1: 86400,
+  };
+  return map[tf] ?? 60;
+};
+
+const fmtHHmm = (dateLike: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const d = new Date(dateLike);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const computeEntryTime = (nowEpochSec: number, tf: string, onlyOnBarClose: boolean): Date => {
+  const tfSec = tfToSec(tf);
+  const openCur = Math.floor(nowEpochSec / tfSec) * tfSec;
+  const openNext = openCur + tfSec;
+  const entryTs = onlyOnBarClose ? openNext : openCur; // epoch (s)
+  return new Date(entryTs * 1000);
+};
+
 export function SnapshotCard({ snapshot }: SnapshotCardProps) {
   const isStale = snapshot.ageSec > 60;
+  
+  const [entryTime, setEntryTime] = useState<string>('');
+
+  useEffect(() => {
+    const updateEntryTime = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const date = computeEntryTime(now, snapshot.tf, snapshot.onlyOnBarClose);
+      setEntryTime(fmtHHmm(date));
+    };
+
+    updateEntryTime();
+    
+    // We want to update it every second to catch the candle change
+    const interval = setInterval(updateEntryTime, 1000); 
+
+    return () => clearInterval(interval);
+  }, [snapshot.tf, snapshot.onlyOnBarClose]);
+
+  const entryTypeLabel = snapshot.onlyOnBarClose ? 'PRÓXIMA VELA' : 'VELA ATUAL';
+
   return (
     <motion.div variants={cardVariants} whileHover={{ y: -5, scale: 1.02 }}>
-      <Card className="flex h-full flex-col overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:shadow-2xl hover:shadow-primary/20">
+      <Card className="flex h-full flex-col overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm">
         <CardHeader className="flex-row items-center justify-between pb-2">
           <CardTitle className="font-headline text-2xl tracking-tighter">
             {snapshot.symbol}
           </CardTitle>
-          <Badge variant="outline" className="font-mono text-sm">
+          <Badge variant="outline" className="font-mono text-sm font-semibold">
             {snapshot.tf}
           </Badge>
         </CardHeader>
@@ -76,11 +128,14 @@ export function SnapshotCard({ snapshot }: SnapshotCardProps) {
             <p className="font-bold text-lg text-foreground">{snapshot.sample}</p>
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-stretch gap-2 bg-secondary/30 p-3">
+        <CardFooter className="flex-col items-stretch gap-3 bg-secondary/30 p-4">
           <div className="flex justify-between gap-2">
             <SignalBadge signal={snapshot.lastSignal} />
             {snapshot.isMarketOpen ? (
-              <Badge className="justify-center border-primary/50 bg-transparent text-primary hover:bg-primary/10">
+              <Badge
+                variant="outline"
+                className="justify-center border-primary/70 bg-transparent text-primary hover:bg-transparent"
+              >
                 MERCADO ABERTO
               </Badge>
             ) : (
@@ -89,18 +144,26 @@ export function SnapshotCard({ snapshot }: SnapshotCardProps) {
               </Badge>
             )}
           </div>
-           <div className="flex justify-between gap-2 text-sm pt-1">
-             <div className='flex items-center gap-1.5 text-muted-foreground'>
-                <CandlestickChart className='h-4 w-4'/>
-                <span>Expira em {snapshot.expiry} candles</span>
-             </div>
+          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+            <div className='flex items-center gap-1.5'>
+              <CalendarClock className='h-4 w-4'/>
+              <span>
+                Entrada na <strong className='font-semibold text-foreground/90'>{entryTypeLabel}</strong> ({entryTime})
+              </span>
+            </div>
+            <div className='flex items-center gap-1.5'>
+              <CandlestickChart className='h-4 w-4'/>
+              <span>Expira em {snapshot.expiry} candles</span>
+            </div>
+          </div>
+           <div className="flex justify-end gap-2 text-sm pt-1">
               <div
                 className={cn(
-                  'flex items-center gap-1 text-muted-foreground',
-                  isStale && 'text-yellow-400'
+                  'flex items-center gap-1.5 text-muted-foreground',
+                  isStale && 'text-yellow-400 font-medium'
                 )}
               >
-                <Clock className="h-3 w-3" />
+                <Clock className="h-4 w-4" />
                 <span>{snapshot.ageSec}s atrás</span>
               </div>
            </div>
