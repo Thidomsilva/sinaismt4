@@ -1,6 +1,6 @@
 import type { Signal } from './types';
 
-const TF_TO_MIN: Record<string, number> = {
+export const TF_TO_MIN: Record<string, number> = {
   M1: 1,
   M5: 5,
   M15: 15,
@@ -18,11 +18,10 @@ export function formatHHMM(d: Date) {
 }
 
 /** Calcula rótulos “VELA ATUAL/PRÓXIMA” + horário da entrada e expiração. */
-export function computeEntryLabels(sig: Signal) {
+export function computeEntryLabels(sig: Signal, now: Date = new Date()) {
   const mins = TF_TO_MIN[sig.tf] ?? 1;
   const start = new Date(sig.timestamp * 1000); // início da vela do sinal (UTC)
-  const now = new Date();
-
+  
   // próxima abertura de vela:
   const nextOpen = new Date(start.getTime() + mins * 60 * 1000);
 
@@ -41,6 +40,7 @@ export function computeEntryLabels(sig: Signal) {
     entryLabel,
     entryHHMM: formatHHMM(entryTime),
     expiryCandlesText: `Expira em ${sig.expiryCandles} candles`,
-    expiryHHMM: formatHHMM(expiryTime), // se quiser mostrar também
+    expiryHHMM: formatHHMM(expiryTime),
+    entryTime,
   };
 }

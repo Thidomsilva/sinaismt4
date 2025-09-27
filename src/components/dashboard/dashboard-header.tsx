@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Select,
   SelectContent,
@@ -5,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useEffect, useState } from 'react';
 
 interface DashboardHeaderProps {
   refreshInterval: number;
@@ -15,6 +18,23 @@ interface DashboardHeaderProps {
   setTfFilter: (tf: string) => void;
   uniqueSymbols: string[];
   uniqueTfs: string[];
+}
+
+function Clock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+    return () => clearInterval(timerId);
+  }, []);
+
+  return (
+    <div className="font-mono text-lg font-semibold text-foreground/80">
+      {time.toLocaleTimeString('pt-BR')}
+    </div>
+  );
 }
 
 export function DashboardHeader({
@@ -38,6 +58,7 @@ export function DashboardHeader({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-4">
+        <Clock />
         <div className="flex items-center gap-2">
           <Select value={symbolFilter} onValueChange={setSymbolFilter}>
             <SelectTrigger className="w-full min-w-[150px] md:w-auto">

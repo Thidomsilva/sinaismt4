@@ -18,11 +18,12 @@ import {
   CandlestickChart,
   CalendarClock,
   Timer,
+  AlertCircle,
 } from 'lucide-react';
 import { WinrateGauge } from './winrate-gauge';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { computeEntryLabels } from '@/lib/entry-text';
+import { computeEntryLabels, TF_TO_MIN } from '@/lib/entry-text';
 
 interface SnapshotCardProps {
   signal: Signal;
@@ -67,21 +68,54 @@ const SignalBadge = ({
   }
 };
 
+const formatTime = (totalSeconds: number) => {
+    if (totalSeconds < 0) totalSeconds = 0;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(
+      2,
+      '0'
+    )}`;
+};
+
 export function SnapshotCard({ signal }: SnapshotCardProps) {
-  const [ageSec, setAgeSec] = useState(0);
+  const [timers, setTimers] = useState({
+      ageSec: 0,
+      candleTimeRemaining: 0,
+      expiryTimeRemaining: 0,
+  });
   const [entryLabels, setEntryLabels] = useState({
       entryLabel: '',
       entryHHMM: '',
       expiryCandlesText: '',
       expiryHHMM: '',
+      entryTime: new Date(),
   });
 
   useEffect(() => {
     const update = () => {
-      const now = Date.now();
+      const now = new Date();
       const received = signal.receivedAt ?? signal.timestamp * 1000;
-      setAgeSec(Math.floor((now - received) / 1000));
-      setEntryLabels(computeEntryLabels(signal));
+      const newAgeSec = Math.floor((now.getTime() - received) / 1000);
+
+      const newEntryLabels = computeEntryLabels(signal, now);
+      
+      const tfMinutes = TF_TO_MIN[signal.tf] ?? 1;
+      const tfSeconds = tfMinutes * 60;
+      const candleStartTime = Math.floor(now.getTime() / 1000 / tfSeconds) * tfSeconds;
+      const candleEndTime = candleStartTime + tfSeconds;
+      const newCandleTimeRemaining = Math.floor(candleEndTime - now.getTime() / 1000);
+      
+      const expirySeconds = newEntryLabels.entryTime.getTime() / 1000 + (signal.expiryCandles * tfSeconds);
+      const newExpiryTimeRemaining = Math.floor(expirySeconds - now.getTime() / 1000);
+
+      setAgeSec(newAgeSec);
+      setEntryLabels(newEntryLabels);
+      setTimers({
+          ageSec: newAgeSec,
+          candleTimeRemaining: newCandleTimeRemaining,
+          expiryTimeRemaining: newExpiryTimeRemaining,
+      })
     };
     
     update();
@@ -89,7 +123,7 @@ export function SnapshotCard({ signal }: SnapshotCardProps) {
     return () => clearInterval(interval);
   }, [signal]);
 
-  const isStale = ageSec > 60;
+  const isStale = timers.ageSec > 60;
 
   return (
     <motion.div
@@ -145,7 +179,7 @@ export function SnapshotCard({ signal }: SnapshotCardProps) {
               </span>
             </div>
             {signal.direction !== 'NONE' && (
-              <div className="flex items-center gap-1.5">
+               <div className="flex items-center gap-1.5">
                 <Timer className="h-4 w-4" />
                 <span>
                     {entryLabels.expiryCandlesText}
@@ -153,6 +187,26 @@ export function SnapshotCard({ signal }: SnapshotCardProps) {
                     <span className='text-muted-foreground/80'>({entryLabels.expiryHHMM})</span>
                 </span>
               </div>
+            )}
+            <div className="flex items-center gap-1.5">
+                <CandlestickChart className="h-4 w-4" />
+                <span>
+                    Vela atual fecha em:{' '}
+                    <strong className="font-semibold text-foreground/90">
+                        {formatTime(timers.candleTimeRemaining)}
+                    </strong>
+                </span>
+            </div>
+             {signal.direction !== 'NONE' && (
+                <div className="flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>
+                        Sinal expira em:{' '}
+                        <strong className="font-semibold text-foreground/90">
+                           {formatTime(timers.expiryTimeRemaining)}
+                        </strong>
+                    </span>
+                </div>
             )}
           </div>
           <div className="flex items-center justify-end gap-2 border-t border-border/20 pt-3 text-sm">
@@ -163,7 +217,7 @@ export function SnapshotCard({ signal }: SnapshotCardProps) {
               )}
             >
               <Clock className="h-4 w-4" />
-              <span>{ageSec}s atrás</span>
+              <span>{timers.ageSec}s atrás</span>
             </div>
           </div>
         </CardFooter>
