@@ -48,8 +48,8 @@ export function DashboardHeader({
   uniqueTfs,
 }: DashboardHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-end gap-2 md:gap-4">
-      <div className="flex items-center justify-end gap-4">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+       <div className="flex items-center justify-between md:justify-end gap-4">
         <Clock />
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground whitespace-nowrap">
@@ -70,7 +70,7 @@ export function DashboardHeader({
           </Select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         <Select value={symbolFilter} onValueChange={setSymbolFilter}>
           <SelectTrigger>
             <SelectValue placeholder="Par" />

@@ -40,7 +40,7 @@ export default function DashboardPage() {
   }, [rows, symbolFilter, tfFilter]);
 
   const renderContent = () => {
-    if (loading) {
+    if (loading && rows.length === 0) {
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
           <Card className="flex w-full max-w-md flex-col items-center justify-center gap-4 p-8">
@@ -105,7 +105,7 @@ export default function DashboardPage() {
         uniqueSymbols={uniqueSymbols}
         uniqueTfs={uniqueTfs}
       />
-      <div className="flex-1 pt-4">{renderContent()}</div>
+      <div className="flex-1">{renderContent()}</div>
     </>
   );
 }
