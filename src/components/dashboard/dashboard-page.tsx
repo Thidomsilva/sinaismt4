@@ -13,7 +13,7 @@ export default function DashboardPage() {
   const [refreshInterval, setRefreshInterval] = useState(5000);
   const [symbolFilter, setSymbolFilter] = useState('all');
   const [tfFilter, setTfFilter] = useState('all');
-  const { loading, error, rows } = useSignals('mock', refreshInterval);
+  const { loading, error, rows } = useSignals('api', refreshInterval);
 
   const uniqueSymbols = useMemo(
     () => ['all', ...Array.from(new Set(rows.map((s) => s.symbol)))].sort(),
@@ -22,8 +22,8 @@ export default function DashboardPage() {
   const uniqueTfs = useMemo(
     () =>
       ['all', ...Array.from(new Set(rows.map((s) => s.tf)))].sort((a, b) => {
-        const aVal = (a.match(/(\d+)/)?.[0] ?? '0') + (a.match(/[A-Z]/)?.[0] ?? '');
-        const bVal = (b.match(/(\d+)/)?.[0] ?? '0') + (b.match(/[A-Z]/)?.[0] ?? '');
+        const aVal = (a.match(/(\\d+)/)?.[0] ?? '0') + (a.match(/[A-Z]/)?.[0] ?? '');
+        const bVal = (b.match(/(\\d+)/)?.[0] ?? '0') + (b.match(/[A-Z]/)?.[0] ?? '');
         return aVal.localeCompare(bVal, undefined, { numeric: true });
       }),
     [rows]
@@ -64,14 +64,14 @@ export default function DashboardPage() {
         </div>
       );
     }
-    if (rows.length === 0) {
+    if (rows.length === 0 && !loading) {
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
           <Card className="flex w-full max-w-md flex-col items-center justify-center gap-4 p-8">
             <SearchX className="h-12 w-12 text-muted-foreground" />
             <h2 className="text-xl font-semibold">Nenhum Sinal Ativo</h2>
             <p className="text-muted-foreground">
-              Não há sinais sendo transmitidos no momento.
+              Não há sinais sendo transmitidos pelo MT4 no momento. Verifique se o indicador está ativo no gráfico.
             </p>
           </Card>
         </div>

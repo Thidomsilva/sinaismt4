@@ -11,3 +11,38 @@ export type Signal = {
   timestamp: number; // epoch seconds (UTC) da vela do sinal
   receivedAt?: number; // epoch ms (front)
 };
+
+
+export type Snapshot = {
+  symbol: string;
+  tf: string;
+  winrate: number;
+  sample: number;
+  lastSignal: 'BUY' | 'SELL' | 'NONE';
+  expiry: number;
+  serverTime: number;
+  isMarketOpen: boolean;
+  spread?: number;
+  notes?: string;
+  onlyOnBarClose: boolean;
+};
+
+export type SnapshotData = Snapshot & {
+  receivedAt: number;
+};
+
+export type SnapshotCache = Map<string, SnapshotData>;
+
+export type PublicSnapshot = {
+  symbol: string;
+  tf: string;
+  winrate: number;
+  sample: number;
+  lastSignal: 'BUY' | 'SELL' | 'NONE';
+  expiry: number;
+  isMarketOpen: boolean;
+  onlyOnBarClose: boolean;
+  receivedAt: number;
+  ageSec: number;
+  serverTime: number;
+};
