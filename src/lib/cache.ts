@@ -28,7 +28,7 @@ export function getSnapshots(): { updatedAt: string; items: PublicSnapshot[] } {
 
   const items: PublicSnapshot[] = Array.from(cache.values()).map(
     (snapshot) => {
-      const { serverTime, spread, notes, ...rest } = snapshot;
+      const { notes, spread, serverTime, ...rest } = snapshot;
       return {
         ...rest,
         ageSec: Math.floor((now - snapshot.receivedAt) / 1000),

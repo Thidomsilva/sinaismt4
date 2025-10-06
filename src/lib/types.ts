@@ -33,16 +33,6 @@ export type SnapshotData = Snapshot & {
 
 export type SnapshotCache = Map<string, SnapshotData>;
 
-export type PublicSnapshot = {
-  symbol: string;
-  tf: string;
-  winrate: number;
-  sample: number;
-  lastSignal: 'BUY' | 'SELL' | 'NONE';
-  expiry: number;
-  isMarketOpen: boolean;
-  onlyOnBarClose: boolean;
-  receivedAt: number;
-  ageSec: number;
-  serverTime: number;
+export type PublicSnapshot = Omit<SnapshotData, 'notes' | 'spread' | 'serverTime'> & {
+    ageSec: number;
 };

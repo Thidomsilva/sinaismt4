@@ -15,8 +15,8 @@ function processSnapshots(items: PublicSnapshot[]): Signal[] {
     expiryCandles: item.expiry,
     onlyOnBarClose: item.onlyOnBarClose,
     marketStatus: item.isMarketOpen ? 'OPEN' : 'CLOSED',
-    timestamp: item.serverTime,
-    receivedAt: Date.now() - (item.ageSec * 1000),
+    timestamp: Math.floor(item.receivedAt / 1000) - item.ageSec, // Aproximação do serverTime
+    receivedAt: item.receivedAt,
   }));
 }
 
