@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     const parsed = snapshotSchema.safeParse(body);
 
     if (!parsed.success) {
+      console.error('Falha na validação do Zod:', parsed.error.flatten());
       return new NextResponse(JSON.stringify(parsed.error.flatten()), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     if(error instanceof Error) {
         errorMessage = error.message;
     }
+    console.error('Erro ao processar a requisição POST:', errorMessage);
     return new NextResponse(JSON.stringify({ error: 'Failed to parse JSON body', details: errorMessage }), {
       status: 400,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
