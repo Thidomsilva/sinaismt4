@@ -2,7 +2,7 @@
 //|                                                MTF_TrendMatrix.mq4
 //| Painel MTF + setas/alerta + assertividade (Binary/Forex)
 //| + Linhas verticais de sincronização para subjanela
-//| + Integração com API Web (Signals Live)
+//| + Web Request para Sinais Ao Vivo
 //+------------------------------------------------------------------+
 #property strict
 #property indicator_chart_window
@@ -12,112 +12,102 @@
 #property indicator_width1  2
 #property indicator_width2  2
 
-// --- Parâmetros de Análise ---
+//--- Parâmetros do Painel e Sinais
 extern string   TimeframesCSV       = "M1,M5,M15,M30,H1";
+extern bool     UseMAVotes          = true;
+extern int      MAPeriodFast        = 20;
+extern int      MAPeriodMid         = 50;
+extern int      MAPeriodSlow        = 100;
+extern bool     UseCCI              = true;   extern int CCI_Period = 14;
+extern bool     UseMACD             = true;   extern int MACD_Fast=12, MACD_Slow=26, MACD_Signal=9;
+extern bool     UseADX              = true;   extern int ADX_Period = 14;  extern int ADX_Min=20;
+extern bool     UseStoch            = false;  extern int K=14, D=3, Slowing=3; extern int StochOB=80, StochOS=20;
+extern int      MinScore            = 4;
+extern bool     OnlyOnBarClose      = true;
+extern bool     EnableAlerts        = true;
+extern bool     PushNotification    = false;
+extern bool     EmailAlert          = false;
 
-extern bool    UseMAVotes          = true;
-extern int     MAPeriodFast        = 20;
-extern int     MAPeriodMid         = 50;
-extern int     MAPeriodSlow        = 100;
+//--- Parâmetros de Assertividade
+extern int      EvaluateLastBars    = 200;
+extern double   TestTP_Pips         = 60;
+extern double   TestSL_Pips         = 25;
+extern int      MaxBarsOutcome      = 20;
+extern bool     UseBinaryEval       = true;
+extern int      ExpiryCandles       = 5;
+extern bool     EntryOnBarClose     = true;
 
-extern bool    UseCCI              = true;   extern int CCI_Period = 14;
-extern bool    UseMACD             = true;   extern int MACD_Fast=12, MACD_Slow=26, MACD_Signal=9;
-extern bool    UseADX              = true;   extern int ADX_Period = 14;  extern int ADX_Min=20;
-extern bool    UseStoch            = false;  extern int K=14, D=3, Slowing=3; extern int StochOB=80, StochOS=20;
+//--- Parâmetros de Mercado e UI
+extern bool     FilterMarketOpen    = true;
+extern int      AllowStartHour      = 0;
+extern int      AllowEndHour        = 23;
+extern int      Corner              = 1;
+extern int      X                   = 10;
+extern int      Y                   = 20;
+extern int      CellW               = 60;
+extern int      RowH                = 16;
+extern color    UpColor             = clrLime;
+extern color    DownColor           = clrTomato;
+extern color    NeutralColor        = clrSilver;
+extern color    PanelText           = clrWhite;
+extern color    PanelTitle          = clrDeepSkyBlue;
+extern bool     DrawSyncLines       = true;
+extern color    SyncBuyColor        = clrAqua;
+extern color    SyncSellColor       = clrMagenta;
+extern int      SyncStyle           = STYLE_DOT;
 
-extern int     MinScore            = 4;
-extern bool    OnlyOnBarClose      = true; // Sinal apenas no fechamento da vela
+//--- Parâmetros da API
+extern string   ApiUrl              = "https://sinaismt4.vercel.app/api/snapshot";
 
-// --- Parâmetros de Teste de Assertividade ---
-extern int     EvaluateLastBars    = 200;
-extern bool    UseBinaryEval       = true;  // Se 'true', usa avaliação para binárias
-extern int     ExpiryCandles       = 5;     // Para Binárias: velas para expiração
-extern bool    EntryOnBarClose     = true;  // Para Binárias: entrada no fechamento ou abertura
-extern double  TestTP_Pips         = 60;    // Para Forex: Take Profit em pips
-extern double  TestSL_Pips         = 25;    // Para Forex: Stop Loss em pips
-extern int     MaxBarsOutcome      = 20;    // Para Forex: Máximo de barras para definir resultado
-
-// --- Alertas e Filtros ---
-extern bool    EnableAlerts        = true;
-extern bool    PushNotification    = false;
-extern bool    EmailAlert          = false;
-extern bool    FilterMarketOpen    = true;
-extern int     AllowStartHour      = 0;
-extern int     AllowEndHour        = 23;
-
-// --- Parâmetros de Visualização ---
-extern bool    DrawSyncLines       = true;
-extern color   SyncBuyColor        = clrAqua;
-extern color   SyncSellColor       = clrMagenta;
-extern int     SyncStyle           = STYLE_DOT;
-extern int     Corner              = 1;
-extern int     X                   = 10;
-extern int     Y                   = 20;
-extern int     CellW               = 60;
-extern int     RowH                = 16;
-extern color   UpColor             = clrLime;
-extern color   DownColor           = clrTomato;
-extern color   NeutralColor        = clrSilver;
-extern color   PanelText           = clrWhite;
-extern color   PanelTitle          = clrDeepSkyBlue;
-
-// --- Parâmetros da API Web ---
-extern string  ApiUrl              = "https://sinaismt4.vercel.app/api/snapshot";
-
-// --- Buffers e Variáveis Globais ---
+//--- Buffers e Variáveis Globais
 double BuyBuf[], SellBuf[];
 double pips2points=1.0, pip=0.0001;
 
 #define MAX_TF 8
 int TFs[MAX_TF]; int nTF=0;
 datetime lastAlertBar=0;
-datetime lastSentBarTime = 0; // Controla envio para API
+datetime lastSentBarTime=0; // Controla envio para API
 
 //+------------------------------------------------------------------+
-//| Funções de Integração com API                                    |
+//| Funções da API
 //+------------------------------------------------------------------+
+string EscapeJSONString(string str){
+    string result = "";
+    int len = StringLen(str);
+    for(int i = 0; i < len; i++){
+        int charCode = StringGetCharacter(str, i);
+        switch(charCode){
+            case 34: result += "\\\""; break; // "
+            case 92: result += "\\\\"; break; // \
+            case 47: result += "\\/";  break; // /
+            case 8:  result += "\\b";  break; // backspace
+            case 12: result += "\\f";  break; // form feed
+            case 10: result += "\\n";  break; // line feed
+            case 13: result += "\\r";  break; // carriage return
+            case 9:  result += "\\t";  break; // tab
+            default:
+                if (charCode < 32) continue; // Ignora caracteres de controle não imprimíveis
+                result += StringSetChar(str, i, charCode);
+        }
+    }
+    return result;
+}
+
 void SendRequest(string payload) {
     string headers = "Content-Type: application/json\r\n";
     char post[], result[];
     int res;
 
     StringToCharArray(payload, post);
-    res = WebRequest("POST", ApiUrl, headers, 5000, post, result, headers);
+    res = WebRequest("POST", ApiUrl, "", "", 5000, post, ArraySize(post), result, headers);
 
     if(res == -1) {
-        Print("Erro no WebRequest: ", GetLastError());
+        Print("WebRequest failed. Error code: ", GetLastError());
     }
 }
-
-string PeriodToString(int tf) {
-    switch(tf) {
-        case PERIOD_M1: return "M1";
-        case PERIOD_M5: return "M5";
-        case PERIOD_M15: return "M15";
-        case PERIOD_M30: return "M30";
-        case PERIOD_H1: return "H1";
-        case PERIOD_H4: return "H4";
-        case PERIOD_D1: return "D1";
-        case PERIOD_W1: return "W1";
-        case PERIOD_MN1: return "MN";
-    }
-    return "";
-}
-
-bool IsMarketOpenForAPI(){
-   if(!FilterMarketOpen) return true;
-   datetime now=TimeCurrent();
-   int dow=TimeDayOfWeek(now);
-   if(dow==0 || dow==6) return false;
-   int h=TimeHour(now);
-   if(AllowStartHour==AllowEndHour) return true;
-   if(AllowStartHour<AllowEndHour)  return (h>=AllowStartHour && h<=AllowEndHour);
-   return (h>=AllowStartHour || h<=AllowEndHour);
-}
-
 
 //+------------------------------------------------------------------+
-//| Funções do Indicador                                             |
+//| Funções Utilitárias do Indicador
 //+------------------------------------------------------------------+
 void InitPipMath(string s){
    int d=(int)MarketInfo(s,MODE_DIGITS);
@@ -136,6 +126,21 @@ int TFByToken(string t){
    if (StringCompare(t,"W1")==0)   return PERIOD_W1;
    if (StringCompare(t,"MN")==0)   return PERIOD_MN1;
    return 0;
+}
+
+string PeriodToString() {
+    switch(Period()) {
+        case PERIOD_M1:  return "M1";
+        case PERIOD_M5:  return "M5";
+        case PERIOD_M15: return "M15";
+        case PERIOD_M30: return "M30";
+        case PERIOD_H1:  return "H1";
+        case PERIOD_H4:  return "H4";
+        case PERIOD_D1:  return "D1";
+        case PERIOD_W1:  return "W1";
+        case PERIOD_MN1: return "MN";
+    }
+    return "UNKNOWN";
 }
 
 void ParseTFs(){
@@ -171,6 +176,9 @@ bool IsMarketOpen(){
    return (h>=AllowStartHour || h<=AllowEndHour);
 }
 
+//+------------------------------------------------------------------+
+//| Lógica de Cálculo de Sinais
+//+------------------------------------------------------------------+
 int VotesForTF(string sym,int tf,int shift){
    int votes=0;
    if(UseMAVotes){
@@ -207,9 +215,8 @@ int VotesForTF(string sym,int tf,int shift){
    return votes;
 }
 
-int FinalVotesTF(int shift){ return VotesForTF(Symbol(),Period(),shift); }
 int FinalSignal(int shift){
-   int v=FinalVotesTF(shift);
+   int v=VotesForTF(Symbol(),Period(),shift);
    if(v>=MinScore)  return 1;
    if(v<=-MinScore) return -1;
    return 0;
@@ -236,6 +243,20 @@ int Outcome_Binary(int dir, int shift){
    else        return (expiryClose<entry)?1:-1;
 }
 
+void SyncVLine(datetime t, bool buy){
+   if(!DrawSyncLines) return;
+   string nm = "MTFM_sync_"+IntegerToString((int)t);
+   if(ObjectFind(0,nm)<0){
+      ObjectCreate(0,nm,OBJ_VLINE,0,t,0);
+      ObjectSetInteger(0,nm,OBJPROP_COLOR, buy?SyncBuyColor:SyncSellColor);
+      ObjectSetInteger(0,nm,OBJPROP_STYLE, SyncStyle);
+      ObjectSetInteger(0,nm,OBJPROP_WIDTH, 1);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Funções de Inicialização
+//+------------------------------------------------------------------+
 int init(){
    SetIndexBuffer(0,BuyBuf);  SetIndexStyle(0,DRAW_ARROW,STYLE_SOLID,2); SetIndexArrow(0,233);
    SetIndexBuffer(1,SellBuf); SetIndexStyle(1,DRAW_ARROW,STYLE_SOLID,2); SetIndexArrow(1,234);
@@ -250,18 +271,11 @@ int deinit(){
    return(0);
 }
 
-void SyncVLine(datetime t, bool buy){
-   if(!DrawSyncLines) return;
-   string nm = "MTFM_sync_"+IntegerToString((int)t);
-   if(ObjectFind(0,nm)<0){
-      ObjectCreate(0,nm,OBJ_VLINE,0,t,0);
-      ObjectSetInteger(0,nm,OBJPROP_COLOR, buy?SyncBuyColor:SyncSellColor);
-      ObjectSetInteger(0,nm,OBJPROP_STYLE, SyncStyle);
-      ObjectSetInteger(0,nm,OBJPROP_WIDTH, 1);
-   }
-}
-
+//+------------------------------------------------------------------+
+//| Função principal do Indicador (OnCalculate)                      |
+//+------------------------------------------------------------------+
 int start(){
+   // --- Lógica de renderização do painel e setas (código original) ---
    ArrayInitialize(BuyBuf,EMPTY_VALUE); ArrayInitialize(SellBuf,EMPTY_VALUE);
 
    int idx=0, x0=X, y0=Y;
@@ -300,17 +314,15 @@ int start(){
       }
    }
 
-   // seta/sinal na vela fechada
-   int sig=FinalSignal(1);
+   int sig_current=FinalSignal(1); // Sinal na vela fechada
    double price=iClose(NULL,0,1);
-   if(sig==1){  BuyBuf[1]=price-2*pip;  SyncVLine(Time[1], true);  }
-   if(sig==-1){ SellBuf[1]=price+2*pip; SyncVLine(Time[1], false); }
+   if(sig_current==1){  BuyBuf[1]=price-2*pip;  SyncVLine(Time[1], true);  }
+   if(sig_current==-1){ SellBuf[1]=price+2*pip; SyncVLine(Time[1], false); }
 
-   // alertas
    if(EnableAlerts && IsMarketOpen()){
-      bool can = (OnlyOnBarClose ? (Time[1]!=lastAlertBar && sig!=0) : (sig!=0));
+      bool can = (OnlyOnBarClose ? (Time[1]!=lastAlertBar && sig_current!=0) : (sig_current!=0));
       if(can){
-         string m="Matrix "+Symbol()+": "+(sig==1?"BUY":"SELL")+
+         string m="Matrix "+Symbol()+": "+(sig_current==1?"BUY":"SELL")+
                   " (score >= "+IntegerToString(MinScore)+") @ "+DoubleToString(price,Digits);
          Alert(m);
          if(PushNotification) SendNotification(m);
@@ -319,7 +331,7 @@ int start(){
       }
    }
 
-   // assertividade
+   // --- Lógica de Assertividade ---
    int total=0,wins=0,loss=0,undef=0;
    int minBarsNeed = UseBinaryEval ? (ExpiryCandles+2) : 3;
    int N = MathMin(EvaluateLastBars, Bars - minBarsNeed);
@@ -354,43 +366,57 @@ int start(){
 
    PutLabel(NewId(idx), line1, x0, y0+(nf+3)*RowH, PanelText);
    PutLabel(NewId(idx), line2, x0, y0+(nf+4)*RowH, (wr>=50?clrDeepSkyBlue:DownColor));
-
-   string mkt = IsMarketOpen() ? "Mercado: ABERTO" : "Mercado: FECHADO";
-   PutLabel(NewId(idx), mkt, x0, y0+(nf+5)*RowH, IsMarketOpen()?UpColor:DownColor);
-
-   // --- Bloco de envio para API ---
+   
+   bool marketIsOpen = IsMarketOpen();
+   string mkt = marketIsOpen ? "Mercado: ABERTO" : "Mercado: FECHADO";
+   PutLabel(NewId(idx), mkt, x0, y0+(nf+5)*RowH, marketIsOpen?UpColor:DownColor);
+   
+   // --- SEÇÃO DE ENVIO PARA API ---
+   // Enviar apenas em uma nova vela para evitar sobrecarga
    if(Time[0] != lastSentBarTime) {
       lastSentBarTime = Time[0];
+      
+      // Coletar os dados para enviar
+      string symbol       = _Symbol;
+      string tf           = PeriodToString();
+      double winrate      = wr;
+      int    sample       = total;
+      
+      // O sinal a ser enviado é o da vela recém-fechada (índice 1)
+      int    api_signal_raw = FinalSignal(1);
+      string lastSignal   = (api_signal_raw == 1) ? "BUY" : (api_signal_raw == -1 ? "SELL" : "NONE");
+      
+      int    expiry       = ExpiryCandles;
+      long   serverTime   = Time[1]; // Timestamp da vela do sinal
+      double spread       = MarketInfo(Symbol(), MODE_SPREAD);
+      
+      // Coletar as notas dos indicadores para o sinal atual
+      string notes        = "";
+      if(UseMAVotes) notes += "MA Alinhada; ";
+      if(UseCCI && iCCI(symbol,0,CCI_Period,PRICE_TYPICAL,1)!=0) notes += "CCI>0; ";
+      if(UseMACD && iMACD(symbol,0,MACD_Fast,MACD_Slow,MACD_Signal,PRICE_CLOSE,MODE_MAIN,1)!=0) notes += "MACD>0; ";
+      if(UseADX && iADX(symbol,0,ADX_Period,PRICE_CLOSE,MODE_MAIN,1) >= ADX_Min) notes += "ADX>Min; ";
 
-      string currentSymbol = _Symbol;
-      string currentTf = PeriodToString(_Period);
-      double currentWinrate = wr;
-      int currentSample = total;
-      int finalSignal = FinalSignal(1);
-      string lastSignalStr = (finalSignal == 1) ? "BUY" : (finalSignal == -1 ? "SELL" : "NONE");
-      int currentExpiry = ExpiryCandles;
-      bool currentIsMarketOpen = IsMarketOpenForAPI();
-      double currentSpread = MarketInfo(currentSymbol, MODE_SPREAD);
-      string currentNotes = "";
-      bool currentOnlyOnBarClose = OnlyOnBarClose;
 
+      // Montar o payload JSON
       string payload = "{";
-      payload = payload + "\"symbol\":\"" + currentSymbol + "\",";
-      payload = payload + "\"tf\":\"" + currentTf + "\",";
-      payload = payload + "\"winrate\":" + DoubleToString(currentWinrate, 1) + ",";
-      payload = payload + "\"sample\":" + IntegerToString(currentSample) + ",";
-      payload = payload + "\"lastSignal\":\"" + lastSignalStr + "\",";
-      payload = payload + "\"expiry\":" + IntegerToString(currentExpiry) + ",";
-      payload = payload + "\"serverTime\":" + IntegerToString(TimeCurrent()) + ",";
-      payload = payload + "\"isMarketOpen\":" + (currentIsMarketOpen ? "true" : "false") + ",";
-      payload = payload + "\"spread\":" + DoubleToString(currentSpread,0) + ",";
-      payload = payload + "\"notes\":\"" + currentNotes + "\",";
-      payload = payload + "\"onlyOnBarClose\":" + (currentOnlyOnBarClose ? "true" : "false");
-      payload = payload + "}";
+      payload += "\"symbol\":\""         + symbol + "\",";
+      payload += "\"tf\":\""             + tf + "\",";
+      payload += "\"winrate\":"          + DoubleToString(winrate, 2) + ",";
+      payload += "\"sample\":"           + IntegerToString(sample) + ",";
+      payload += "\"lastSignal\":\""     + lastSignal + "\",";
+      payload += "\"expiry\":"           + IntegerToString(expiry) + ",";
+      payload += "\"serverTime\":"       + IntegerToString(serverTime) + ",";
+      payload += "\"isMarketOpen\":"     + (marketIsOpen ? "true" : "false") + ",";
+      payload += "\"spread\":"           + DoubleToString(spread, 0) + ",";
+      payload += "\"onlyOnBarClose\":"   + (OnlyOnBarClose ? "true" : "false") + ",";
+      payload += "\"notes\":\""          + EscapeJSONString(notes) + "\"";
+      payload += "}";
 
+      // Enviar a requisição
       SendRequest(payload);
    }
-
+   
    return(0);
 }
 //+------------------------------------------------------------------+
